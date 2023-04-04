@@ -1,65 +1,78 @@
-import './App.css';
-import React from 'react';
-import { useRoutes } from 'react-router-dom'
-import ReadPosts from './pages/ReadPosts'
-import CreatePost from './pages/CreatePost'
-import EditPost from './pages/EditPost'
-import { Link } from 'react-router-dom'
+import React, {useState, useEffect} from 'react';
+import { useParams } from 'react-router-dom';
+import './EditPost.css'
+import { supabase } from '../client'
 
 
-const App = () => {
-  
-  const descr = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
+const EditPost = ({data}) => {
 
-  const posts = [
-      {'id':'1', 
-      'title': 'Cartwheel in Chelsea 🤸🏽‍♀️',
-      'author':'Harvey Milian', 
-      'description': descr},
-      {'id':'2', 
-      'title': 'Love Lock in Paris 🔒',
-      'author':'Beauford Delaney', 
-      'description':descr},
-      {'id':'3', 
-      'title': 'Wear Pink on Fridays 🎀',
-      'author':'Onika Tonya', 
-      'description':descr},
-      {'id':'4', 
-      'title': 'Adopt a Dog 🐶',
-      'author':'Denise Michelle', 
-      'description':descr},
-  ]
- 
+    const {id} = useParams();
+    const [post, setPost] = useState({id: null, title: "", author: "", description: ""});
 
-  // Sets up routes
-  let element = useRoutes([
-    {
-      path: "/",
-      element:<ReadPosts data={posts}/>
-    },
-    {
-      path:"/edit/:id",
-      element: <EditPost data={posts} />
-    },
-    {
-      path:"/new",
-      element: <CreatePost />
+    useEffect(() => {
+        const result = data.filter(item => String(item.id) === id)[0];
+        setPost({title: result.title, author: result.author, description: result.description});
+    }, [data, id]);
+
+
+    const handleChange = (event) => {
+        const {name, value} = event.target;
+        setPost( (prev) => {
+            return {
+                ...prev,
+                [name]:value,
+            }
+        })
     }
-  ]);
+    
+    const updatePost = async (event) => {
+        event.preventDefault();
+        const { error } = await supabase
+        .from('Posts')
+        .update({ title: post.title, author: post.author,  description: post.description})
+        .eq('id', id)
 
-  return ( 
+        if (error) {
+            console.log(error);
+        }
 
-    <div className="App">
+        window.location = "/";
+    }
 
-      <div className="header">
-        <h1>👍 Bet 1.0</h1>
-        <Link to="/"><button className="headerBtn"> Explore Challenges 🔍  </button></Link>
-        <Link to="/new"><button className="headerBtn"> Submit Challenge 🏆 </button></Link>
-      </div>
-        {element}
-    </div>
+    const deletePost = async (event) => {
+        event.preventDefault();
+        const { error } = await supabase
+        .from('Posts')
+        .delete()
+        .eq('id', id) 
 
-  );
+        if (error) {
+            console.log(error);
+        }
+
+        window.location = "/";
+    }
+
+    return (
+        <div>
+            <form>
+                <label>Title</label> <br />
+                <input type="text" id="title" name="title" value={post.title} onChange={handleChange}/><br />
+                <br/>
+
+                <label>Author</label><br />
+                <input type="text" id="author" name="author" value={post.author} onChange={handleChange}/><br />
+                <br/>
+
+                <label>Description</label><br />
+                <textarea rows="5" cols="50" id="description" name="description" value={post.description} onChange={handleChange}>
+                </textarea>
+                <br/>
+                <input type="submit" value="Submit" onClick={updatePost}/>
+                <button className="deleteButton" onClick={deletePost}>Delete</button>
+            </form>
+        </div>
+    )
 }
 
-export default App;
+export default EditPost
